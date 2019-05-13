@@ -1,0 +1,89 @@
+Setting up DRBD
+
+1) On both HOSTS :
+	-- create a drive 
+	
+		root@ares-s1:~# pvcreate /dev/sdi
+			Physical volume "/dev/sdi" successfully created
+		root@ares-s1:~# vgcreate vgdata /dev/sdi
+			Volume group "vgdata" successfully created
+		root@ares-s1:~# lvcreate -n lv1 -l 100%FREE vgdata
+			Logical volume "lv1" created.
+
+			
+		root@ares-s2:~#  pvcreate /dev/sdi
+			Physical volume "/dev/sdi" successfully created
+		root@ares-s2:~# vgcreate vgdata /dev/sdi
+			Volume group "vgdata" successfully created
+		root@ares-s2:~# lvcreate -n lv1 -l 100%FREE vgdata
+			Logical volume "lv1" created.	
+
+			
+2) On both HOSTS :	
+	-- Install DRDB 
+		root@ares-s1:~# apt update && apt-get install -y drbd8-utils
+		
+		root@ares-s2:~# apt update && apt-get install -y drbd8-utils
+		
+
+3) On both machines :
+	-- replace /etc/drdb.conf with :
+		global { usage-count no; }
+		common { protocol C; }
+		resource r0 {
+
+		net {
+			 max-buffers     80k;
+			 sndbuf-size     10M;
+			 rcvbuf-size     10M;
+		   }
+		   disk {
+			 resync-rate         3123M; # bytes/second, default
+			 c-plan-ahead        20; # 1/10 seconds, default
+			 c-delay-target      10; # 1/10 seconds, default
+			 c-fill-target       1M; # bytes, default
+			 c-max-rate          3123M; # bytes/second, default
+			 c-min-rate          250k; # bytes/second, default
+		   }
+		  on ares-s1 {
+			device /dev/drbd0;
+			disk /dev/vgdata/lv1;
+			address 10.1.2.141:7788;
+			meta-disk internal;
+		  }
+		  on ares-s2 {
+			device /dev/drbd0;
+			disk /dev/vgdata/lv1;
+			address 10.1.2.142:7788;
+			meta-disk internal;
+		  }
+		}
+
+
+4) On both machiens :
+	root@ares-s1:~# modprobe drbd
+	root@ares-s1:~# drbdadm create-md r0			
+	root@ares-s1:~#drbdadm up r0
+	
+	root@ares-s2:~# modprobe drbd
+	root@ares-s2:~# drbdadm create-md r0		
+	root@ares-s2:~#drbdadm up r0
+	
+	View details:
+		root@ares-s1:~# drbd-overview
+		root@ares-s1:~# cat /proc/drbd
+	
+	
+	
+5) On primary server  ( ares-s1) 
+	root@ares-s1:~#drbdadm -- --overwrite-data-of-peer primary r0/0
+	
+	Watch status :
+		root@ares-s1:~#watch cat /proc/drbd
+		
+	--- DO NOT PROCEED TO THE NEXT STEP TILL THIS IS DONE
+		
+		
+
+
+	 
