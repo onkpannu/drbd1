@@ -104,9 +104,39 @@ Setting up DRBD
 	
 -----------------  Done ----------------- 
 Failover :
+1) On Primary Server ( ares-s1)
+	root@ares-s1:~# umount /data
 	
+	root@ares-s1:~# drbd-overview
+		0:r0/0  Connected Primary/Secondary UpToDate/UpToDate
+	root@ares-s1:~# drbdadm secondary r0
+	root@ares-s1:~# cat /proc/drbd
+		version: 8.4.5 (api:1/proto:86-101)
+		srcversion: 611D9EEFB9C11D2BC709D07
+		 0: cs:Connected ro:Secondary/Secondary ds:UpToDate/UpToDate C r-----
+			ns:977210316 nr:0 dw:479332 dr:976735305 al:122 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:0
 
-		
+2) on secondary Server	( ares-s2)	
+	root@ares-s2:~# cat /proc/drbd
+		version: 8.4.5 (api:1/proto:86-101)
+		srcversion: 611D9EEFB9C11D2BC709D07
+		 0: cs:Connected ro:Secondary/Secondary ds:UpToDate/UpToDate C r-----
+			ns:0 nr:977210316 dw:977210316 dr:0 al:0 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:0
+	
+	root@ares-s2:~# drbdadm primary r0
+	
+	root@ares-s2:~# cat /proc/drbd
+		version: 8.4.5 (api:1/proto:86-101)
+		srcversion: 611D9EEFB9C11D2BC709D07
+		 0: cs:Connected ro:Primary/Secondary ds:UpToDate/UpToDate C r-----
+			ns:0 nr:977210316 dw:977210316 dr:168 al:0 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:0
+	
+3) Mount partition
+	root@ares-s2:~# mount /dev/drbd0 /data	
+	root@ares-s2:~# cat /proc/drbd
+		version: 8.4.5 (api:1/proto:86-101)
+		srcversion: 611D9EEFB9C11D2BC709D07
+		 0: cs:Connected ro:Primary/Secondary ds:UpToDate/UpToDate C r-----
+			ns:2048 nr:977210316 dw:977212364 dr:1256 al:1 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:0
 
-
-	 
+	
